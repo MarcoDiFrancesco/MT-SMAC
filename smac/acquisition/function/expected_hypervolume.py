@@ -296,7 +296,7 @@ class PHVI(AbstractHVI):
 
         population_costs, _ = self.model.predict_marginalized(population_X)
 
-        print("===population_costs", population_costs)
+        # print("===population_costs", population_costs)
         # population_costs: means 
         # population_costs: list[list[float]]
         # population_costs: shape [#samples, 1]
@@ -304,7 +304,7 @@ class PHVI(AbstractHVI):
         #   e.g. Should be: [#samples, #objectives]
         #   e.g. Should be: [[0.314 0.314 0.314] [0.314 0.314 0.314]]
 
-        print("===Bounds", self._objective_bounds)
+        # print("===Bounds", self._objective_bounds)
         # self._objective_bounds: list[tuple[float, float]]
         #   Refers to the upper and lower limits for each objective, with 3 objectives:
         #   [[ 59.294 147.286] [ 57.186  82.890] [ 57.186  82.890]]

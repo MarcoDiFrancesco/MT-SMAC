@@ -95,7 +95,6 @@ class RandomForestMO(AbstractRandomForest):
         self._max_nodes = max_nodes
         self._bootstrapping = bootstrapping
 
-        print("===N_TREES", n_trees)
         self._rf = XGBRegressor(
             n_estimators=n_trees,
             # n_points_per_tree
@@ -187,8 +186,6 @@ class RandomForestMO(AbstractRandomForest):
                 # mean_, var = self._rf.predict_mean_var(row_X)
                 pass
 
-            print("====", X.shape, X)
-
             out = self._rf.predict(X)
             """
             Example output of "self._rf.predict(X)" with shape: (3 instances/configs, 4 targets).
@@ -259,7 +256,6 @@ class RandomForestMO(AbstractRandomForest):
             The predictive variance.
         """
         assert self._n_features == 0, "Removed code with self._n_features>=1, reimplement it"
-        print("===input predict_marginalized", X.shape, X)
         mean, var = self.predict(X)
 
         assert var is None, "Removed code to handle variance, reimplement it"
