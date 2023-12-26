@@ -68,7 +68,7 @@ class MultiObjectiveModel(AbstractModel):
             m, v = estimator.predict_marginalized(X)
             mean[:, i] = m.flatten()
             var[:, i] = v.flatten()
-
+        # print("===mo-smac predict_marginalized output", mean.shape, mean)
         return mean, var
 
     def _train(self: Self, X: np.ndarray, Y: np.ndarray) -> Self:
@@ -96,5 +96,4 @@ class MultiObjectiveModel(AbstractModel):
             assert v is not None
             mean[:, i] = m.flatten()
             var[:, i] = v.flatten()
-
         return mean, var

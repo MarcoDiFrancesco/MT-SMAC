@@ -232,6 +232,12 @@ class RandomForest(AbstractRandomForest):
         means = np.array(means)
         vars_ = np.array(vars_)
 
+        """
+        Example output of "means.reshape((-1, 1))" has shape (#samples, 1):
+            [[0.33544672]
+             [0.33544672]
+             [0.33544672]]
+        """
         return means.reshape((-1, 1)), vars_.reshape((-1, 1))
 
     def predict_marginalized(self, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

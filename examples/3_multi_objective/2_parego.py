@@ -30,6 +30,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.neural_network import MLPClassifier
 
 from smac import HyperparameterOptimizationFacade as HPOFacade
+from smac import AlgorithmConfigurationFacade as ACFacade
 from smac import Scenario
 from smac.facade.abstract_facade import AbstractFacade
 from smac.multi_objective.parego import ParEGO
@@ -147,12 +148,12 @@ if __name__ == "__main__":
     )
 
     # We want to run five random configurations before starting the optimization.
-    initial_design = HPOFacade.get_initial_design(scenario, n_configs=5)
+    initial_design = ACFacade.get_initial_design(scenario, n_configs=5)
     multi_objective_algorithm = ParEGO(scenario)
-    intensifier = HPOFacade.get_intensifier(scenario, max_config_calls=2)
+    intensifier = ACFacade.get_intensifier(scenario, max_config_calls=2)
 
     # Create our SMAC object and pass the scenario and the train method
-    smac = HPOFacade(
+    smac = ACFacade(
         scenario,
         mlp.train,
         initial_design=initial_design,

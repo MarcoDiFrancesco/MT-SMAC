@@ -148,3 +148,6 @@ src
 # Pycharm
 .idea
 .vscode
+
+# Yahpo Data
+yahpo_data

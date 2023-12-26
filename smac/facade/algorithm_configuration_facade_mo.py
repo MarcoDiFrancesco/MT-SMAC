@@ -3,19 +3,27 @@ from __future__ import annotations
 from ConfigSpace import Configuration
 
 from smac.acquisition.function.expected_improvement import EI
+from smac.acquisition.function.expected_hypervolume import EHVI, PHVI
 from smac.acquisition.maximizer.local_and_random_search import (
     LocalAndSortedRandomSearch,
 )
 from smac.facade.abstract_facade import AbstractFacade
 from smac.initial_design.default_design import DefaultInitialDesign
 from smac.intensifier.intensifier import Intensifier
+from smac.intensifier.multi_objective_intensifier import MOIntensifier
+from smac.intensifier.mixins import intermediate_update, intermediate_decision, update_incumbent
 from smac.model.random_forest.random_forest import RandomForest
-from smac.multi_objective.aggregation_strategy import MeanAggregationStrategy
+from smac.model.random_forest.random_forest_mo import RandomForestMO
+
+# from smac.multi_objective.aggregation_strategy import MeanAggregationStrategy
+from smac.multi_objective.aggregation_strategy import NoAggregationStrategy
 from smac.random_design.probability_design import ProbabilityRandomDesign
 from smac.runhistory.encoder.encoder import RunHistoryEncoder
+from smac.runhistory.encoder.log_encoder import RunHistoryLogEncoder
 from smac.scenario import Scenario
 from smac.utils.logging import get_logger
-from smac.intensifier.mixins import intermediate_update, intermediate_decision
+from smac.acquisition.maximizer.multi_objective_search import MOLocalAndSortedRandomSearch
+
 
 __copyright__ = "Copyright 2022, automl.org"
 __license__ = "3-clause BSD"
@@ -24,7 +32,7 @@ __license__ = "3-clause BSD"
 logger = get_logger(__name__)
 
 
-class AlgorithmConfigurationFacade(AbstractFacade):
+class AlgorithmConfigurationFacadeMO(AbstractFacade):
     @staticmethod
     def get_model(  # type: ignore
         scenario: Scenario,
@@ -36,7 +44,7 @@ class AlgorithmConfigurationFacade(AbstractFacade):
         max_depth: int = 20,
         bootstrapping: bool = True,
         pca_components: int = 4,
-    ) -> RandomForest:
+    ) -> RandomForestMO:
         """Returns a random forest as surrogate model.
 
         Parameters
@@ -56,26 +64,31 @@ class AlgorithmConfigurationFacade(AbstractFacade):
         pca_components : float, defaults to 4
             Number of components to keep when using PCA to reduce dimensionality of instance features.
         """
-        return RandomForest(
+        # TODO: add ignored parameters
+        return RandomForestMO(
             configspace=scenario.configspace,
-            n_trees=n_trees,
-            ratio_features=ratio_features,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            max_depth=max_depth,
-            bootstrapping=bootstrapping,
-            log_y=False,
-            instance_features=scenario.instance_features,
-            pca_components=pca_components,
-            seed=scenario.seed,
+            objectives=scenario.objectives,
         )
+        # return RandomForest(
+        #     configspace=scenario.configspace,
+        #     n_trees=n_trees,
+        #     ratio_features=ratio_features,
+        #     min_samples_split=min_samples_split,
+        #     min_samples_leaf=min_samples_leaf,
+        #     max_depth=max_depth,
+        #     bootstrapping=bootstrapping,
+        #     log_y=False,
+        #     instance_features=scenario.instance_features,
+        #     pca_components=pca_components,
+        #     seed=scenario.seed,
+        # )
 
     @staticmethod
     def get_acquisition_function(  # type: ignore
         scenario: Scenario,
         *,
         xi: float = 0.0,
-    ) -> EI:
+    ) -> PHVI | EHVI:
         """Returns an Expected Improvement acquisition function.
 
         Parameters
@@ -85,14 +98,17 @@ class AlgorithmConfigurationFacade(AbstractFacade):
             Controls the balance between exploration and exploitation of the
             acquisition function.
         """
-        return EI(xi=xi)
+        return PHVI()
+        # return EHVI()
 
     @staticmethod
     def get_acquisition_maximizer(  # type: ignore
         scenario: Scenario,
-    ) -> LocalAndSortedRandomSearch:
+        # ) -> LocalAndSortedRandomSearch:
+    ) -> MOLocalAndSortedRandomSearch:
         """Returns local and sorted random search as acquisition maximizer."""
-        optimizer = LocalAndSortedRandomSearch(
+        # optimizer = LocalAndSortedRandomSearch(
+        optimizer = MOLocalAndSortedRandomSearch(
             scenario.configspace,
             seed=scenario.seed,
         )
@@ -100,25 +116,29 @@ class AlgorithmConfigurationFacade(AbstractFacade):
         return optimizer
 
     @staticmethod
-    def get_intensifier(
+    def get_intensifier(  # type: ignore
         scenario: Scenario,
         *,
         max_config_calls: int = 2000,
         max_incumbents: int = 10,
     ) -> Intensifier:
-        """Returns ``Intensifier`` as intensifier. Supports budgets.
+        """Returns ``MOIntensifier`` as intensifier. Uses the default configuration for ``race_against``.
 
         Parameters
         ----------
-        max_config_calls : int, defaults to 3
-            Maximum number of configuration evaluations. Basically, how many instance-seed keys should be evaluated at
-            maximum for a configuration.
+        scenario : Scenario
+        max_config_calls : int, defaults to 2000
+            Maximum number of configuration evaluations. Basically, how many instance-seed keys should be max evaluated
+            for a configuration.
         max_incumbents : int, defaults to 10
             How many incumbents to keep track of in the case of multi-objective.
         """
-        class NewIntensifier(intermediate_decision.NewCostDominatesOldCost,
-                             intermediate_update.ClosestIncumbentComparison,
-                             Intensifier):
+
+        class NewIntensifier(
+            intermediate_decision.NewCostDominatesOldCost,
+            intermediate_update.ClosestIncumbentComparison,
+            MOIntensifier,
+        ):
             pass
 
         return NewIntensifier(
@@ -163,9 +183,10 @@ class AlgorithmConfigurationFacade(AbstractFacade):
     @staticmethod
     def get_multi_objective_algorithm(  # type: ignore
         scenario: Scenario,
-        *,
-        objective_weights: list[float] | None = None,
-    ) -> MeanAggregationStrategy:
+        # *,
+        # objective_weights: list[float] | None = None,
+        # ) -> MeanAggregationStrategy:
+    ) -> NoAggregationStrategy:
         """Returns the mean aggregation strategy for the multi objective algorithm.
 
         Parameters
@@ -175,12 +196,15 @@ class AlgorithmConfigurationFacade(AbstractFacade):
             Weights for averaging the objectives in a weighted manner. Must be of the same length as the number of
             objectives.
         """
-        return MeanAggregationStrategy(
-            scenario=scenario,
-            objective_weights=objective_weights,
-        )
+        return NoAggregationStrategy()
+        # return MeanAggregationStrategy(
+        #     scenario=scenario,
+        #     objective_weights=objective_weights,
+        # )
 
     @staticmethod
     def get_runhistory_encoder(scenario: Scenario) -> RunHistoryEncoder:
-        """Returns the default runhistory encoder."""
-        return RunHistoryEncoder(scenario)
+        # """Returns the default runhistory encoder."""
+        # return RunHistoryEncoder(scenario)
+        """Returns the default runhistory encoder with native multi objective support enabled."""
+        return RunHistoryEncoder(scenario, native_multi_objective=True, normalize=False)

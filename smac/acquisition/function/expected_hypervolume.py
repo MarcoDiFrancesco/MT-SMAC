@@ -270,11 +270,45 @@ class PHVI(AbstractHVI):
         super(PHVI, self)._update(**kwargs)
         incumbents: list[Configuration] = kwargs.get("incumbents", None)
 
+        # incumbents:
+        # e.g. [Configuration(values={
+        #   'x1': 0.417,
+        #   'x2': 0.000,
+        #   'x3': 0.146,
+        #   'x4': 0.186,
+        #   'x5': 0.396,
+        #   }), Configuration(values={
+        #   'x1': 0.720,
+        #   'x2': 0.302,
+        #   'x3': 0.092,
+        #   'x4': 0.345,
+        #   'x5': 0.538,
+        #   })
+        # ]
+
         # Update PHVI
         # Prediction all
         population_configs = incumbents
         population_X = np.array([config.get_array() for config in population_configs])
+
+        # population_X: shape [#samples, #hyperparameters]
+        #   e.g. [[0.417 0.114 0.146 0.186 0.396] [0.720 0.302 0.923 0.345 0.538]]
+
         population_costs, _ = self.model.predict_marginalized(population_X)
+
+        print("===population_costs", population_costs)
+        # population_costs: means 
+        # population_costs: list[list[float]]
+        # population_costs: shape [#samples, 1]
+        #   e.g. Now: [[0.314] [0.314]]
+        #   e.g. Should be: [#samples, #objectives]
+        #   e.g. Should be: [[0.314 0.314 0.314] [0.314 0.314 0.314]]
+
+        print("===Bounds", self._objective_bounds)
+        # self._objective_bounds: list[tuple[float, float]]
+        #   Refers to the upper and lower limits for each objective, with 3 objectives:
+        #   [[ 59.294 147.286] [ 57.186  82.890] [ 57.186  82.890]]
+
 
         # Compute HV
         population_hv = self.get_hypervolume(population_costs)

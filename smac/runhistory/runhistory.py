@@ -63,6 +63,7 @@ class RunHistory(Mapping[TrialKey, TrialValue]):
         self._multi_objective_algorithm = multi_objective_algorithm
         self._overwrite_existing_trials = overwrite_existing_trials
         self.reset()
+        self.incumbents_per_trial: dict[int, list[Configuration]] = {}
 
     @property
     def submitted(self) -> int:
